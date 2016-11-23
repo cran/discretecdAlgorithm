@@ -46,6 +46,8 @@ NULL
 #' @param weight.scale A postitive number to scale weight matrix.
 #' @param upperbound A large positive value used to truncate the adaptive weights.
 #'        A -1 value indicates that there is no truncation.
+#' @param adaptive A bool parameter, default value is FALSE. If FALSE, a regular lasso algorithm will be run.
+#'        If TRUE, an adaptive lasso algorithm will be run.
 #' @return A \code{\link[sparsebnUtils]{sparsebnPath}} object.
 #'         The CD Algorithm will be stoped if the number of edges exceeds 3 times of number of variables.
 #' @examples
@@ -67,6 +69,8 @@ NULL
 #' cd.run(indata = dat_obs)
 #' # Run with default settings for interventional data
 #' cd.run(indata = dat_int)
+#' # Run adaptive algorithm for observational data
+#' cd.run(indata = dat_obs, adaptive = TRUE)
 #'
 #' ### Optional: Adjust settings
 #' n_node <- ncol(dat)
@@ -88,20 +92,45 @@ cd.run <- function(indata,
                    error.tol=0.0001,
                    convLb=0.01,
                    weight.scale=1.0,
-                   upperbound = 100.0) {
+                   upperbound = 100.0,
+                   adaptive = FALSE) {
 
-  CD_call(indata = indata,
-          eor = NULL,
-          weights = weights,
-          lambda_seq = lambdas,
-          fmlam = 0.1,
-          nlam = lambdas.length,
-          eps = error.tol,
-          convLb = convLb,
-          qtol = error.tol,
-          gamma = weight.scale,
-          upperbound = upperbound)
+  cd_adaptive_run(indata = indata,
+                  eor = NULL,
+                  weights = weights,
+                  lambda_seq = lambdas,
+                  fmlam = 0.01,
+                  nlam = lambdas.length,
+                  eps = error.tol,
+                  convLb = convLb,
+                  qtol = error.tol,
+                  gamma = weight.scale,
+                  upperbound = upperbound,
+                  adaptive = adaptive)
 
+}
+
+cd_adaptive_run <- function(indata,
+                            eor,
+                            weights,
+                            lambda_seq,
+                            fmlam,
+                            nlam,
+                            eps,
+                            convLb,
+                            qtol,
+                            gamma,
+                            upperbound,
+                            adaptive)
+{
+  if (adaptive == FALSE) {
+    return(CD_call(indata, eor, weights, lambda_seq, fmlam, nlam, eps, convLb, qtol, gamma, upperbound)$fit)
+  }
+  else {
+    cd_call_out <- CD_call(indata, eor, weights, lambda_seq, fmlam, nlam, eps, convLb, qtol, gamma, upperbound)
+    adaptive_weights <- cd_call_out$adaptive_weights
+    return(CD_call(indata, eor, adaptive_weights, lambda_seq = NULL, fmlam, nlam, eps, convLb, qtol, gamma, upperbound)$fit)
+  }
 }
 
 # Convert input to the right form.
@@ -151,7 +180,7 @@ CD_call <- function(indata,
   data_matrix <- as.matrix(data_matrix)
 
   # get n_levels.
-  n_levels <- as.integer(sapply(indata$levels, function(x){length(x)}))
+  n_levels <- as.integer(sapply(data$levels, function(x){length(x)}))
 
   # get observational index (obsIndex_R) from interventional list (ivn)
   obsIndex_R <- get_obsIndex(data_ivn, node)
@@ -180,6 +209,7 @@ CD_call <- function(indata,
     }
   }
 
+  # eor <- eor[sample(1:eor_nr), ]
   eor_nr <- as.integer(eor_nr)
   eor <- matrix(as.integer(eor), ncol = 2)
 
@@ -234,9 +264,10 @@ CD_call <- function(indata,
   # lambda <- estimate$lambdas
   # extract adjacency matrix
   estimateG <- estimate$estimateG
-  # timing data is not available yet. Fill in NA tempararily.
-  # time = rep(NA, nlam)
   time <- estimate$time
+  beta_l2 <- estimate$adaptive_weights
+
+  adaptive_weights <- get_adaptWeights(beta_l2)
 
   # convert each element in fit to sparsebnFit object
   fit <- get.edgeList(estimateG, dataSize, lambda_seq, time)
@@ -258,7 +289,8 @@ CD_call <- function(indata,
   # convert fit to sparsebnPath object
   fit <- sparsebnUtils::sparsebnPath(fit)
 
-  return(fit)
+  return(list(fit = fit, adaptive_weights = adaptive_weights))
+  # return(fit)
 }
 
 # a function that directly calls from cpp

@@ -6,7 +6,7 @@
 \usage{
 cd.run(indata, weights = NULL, lambdas = NULL, lambdas.length = 30,
   error.tol = 1e-04, convLb = 0.01, weight.scale = 1, upperbound = 100,
-  adaptive = FALSE)
+  alpha = 3, permute = FALSE, adaptive = FALSE)
 }
 \arguments{
 \item{indata}{A sparsebnData object.}
@@ -32,6 +32,11 @@ See function \code{\link{max_lambda}} for details.}
 
 \item{upperbound}{A large positive value used to truncate the adaptive weights.
 A -1 value indicates that there is no truncation.}
+
+\item{alpha}{Threshold parameter used to terminate the algorithm whenever the number of edges in the
+current DAG estimate is \code{> alpha * ncol(data)}.}
+
+\item{permute}{A bool parameter, default value is FALSE. If TRUE, will randomize order of going through blocks.}
 
 \item{adaptive}{A bool parameter, default value is FALSE. If FALSE, a regular lasso algorithm will be run.
 If TRUE, an adaptive lasso algorithm will be run.}
@@ -88,4 +93,3 @@ cd.run(indata = dat_obs, weights = weights, lambdas.length = 10)
 # Note: Normally, users do not need to change default settings.
 }
 }
-

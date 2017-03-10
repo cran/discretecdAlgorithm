@@ -8,11 +8,11 @@
 # No documentation yet
 # ========================================================
 
-#' @useDynLib discretecdAlgorithm
+#' @useDynLib discretecdAlgorithm, .registration = TRUE
 #' @importFrom Rcpp sourceCpp
 NULL
 
-# ========================================================
+#========================================================
 # The main function CD.run
 # ========================================================
 ## will be exported
@@ -46,6 +46,9 @@ NULL
 #' @param weight.scale A postitive number to scale weight matrix.
 #' @param upperbound A large positive value used to truncate the adaptive weights.
 #'        A -1 value indicates that there is no truncation.
+#' @param alpha Threshold parameter used to terminate the algorithm whenever the number of edges in the
+#'              current DAG estimate is \code{> alpha * ncol(data)}.
+#' @param permute A bool parameter, default value is FALSE. If TRUE, will randomize order of going through blocks.
 #' @param adaptive A bool parameter, default value is FALSE. If FALSE, a regular lasso algorithm will be run.
 #'        If TRUE, an adaptive lasso algorithm will be run.
 #' @return A \code{\link[sparsebnUtils]{sparsebnPath}} object.
@@ -93,6 +96,8 @@ cd.run <- function(indata,
                    convLb=0.01,
                    weight.scale=1.0,
                    upperbound = 100.0,
+                   alpha = 3,
+                   permute = FALSE,
                    adaptive = FALSE) {
 
   cd_adaptive_run(indata = indata,
@@ -106,6 +111,8 @@ cd.run <- function(indata,
                   qtol = error.tol,
                   gamma = weight.scale,
                   upperbound = upperbound,
+                  threshold = alpha,
+                  permute = permute,
                   adaptive = adaptive)
 
 }
@@ -121,21 +128,24 @@ cd_adaptive_run <- function(indata,
                             qtol,
                             gamma,
                             upperbound,
+                            threshold,
+                            permute,
                             adaptive)
 {
   if (adaptive == FALSE) {
-    return(CD_call(indata, eor, weights, lambda_seq, fmlam, nlam, eps, convLb, qtol, gamma, upperbound)$fit)
+    return(CD_call(indata, eor, permute, weights, lambda_seq, fmlam, nlam, eps, convLb, qtol, gamma, upperbound, threshold)$fit)
   }
   else {
-    cd_call_out <- CD_call(indata, eor, weights, lambda_seq, fmlam, nlam, eps, convLb, qtol, gamma, upperbound)
+    cd_call_out <- CD_call(indata, eor, permute, weights, lambda_seq, fmlam, nlam, eps, convLb, qtol, gamma, upperbound, threshold)
     adaptive_weights <- cd_call_out$adaptive_weights
-    return(CD_call(indata, eor, adaptive_weights, lambda_seq = NULL, fmlam, nlam, eps, convLb, qtol, gamma, upperbound)$fit)
+    return(CD_call(indata, eor, permute, adaptive_weights, lambda_seq = NULL, fmlam, nlam, eps, convLb, qtol, gamma, upperbound, threshold)$fit)
   }
 }
 
 # Convert input to the right form.
 CD_call <- function(indata,
                     eor,
+                    permute,
                     weights,
                     lambda_seq,
                     fmlam,
@@ -144,7 +154,8 @@ CD_call <- function(indata,
                     convLb,
                     qtol,
                     gamma,
-                    upperbound) {
+                    upperbound,
+                    threshold) {
 
   # Allow users to input a data.frame, but kindly warn them about doing this.
   # if the input is a dataframe, the data set is treated as an observational data set.
@@ -164,11 +175,18 @@ CD_call <- function(indata,
 
   # Check data format
   if(!sparsebnUtils::is.sparsebnData(data)) stop(sparsebnUtils::input_not_sparsebnData(data))
+  count_levels <- sparsebnUtils::auto_count_levels(data$data)
+  if(sum(count_levels<2)) stop("There must be at least two levels for each node!")
 
   # Extract the data and the intervention list.
   data_matrix <- data$data
   data_matrix <- as.data.frame(sapply(data_matrix, function(x){as.integer(x)}))
   data_ivn <- data$ivn
+  if (is.null(data_ivn)) {
+    data_ivn <- as.list(rep(0L, nrow(data_matrix)))
+  }
+  if (length(data_ivn)!= nrow(data_matrix)) stop("length of ivn should be equals to number of observations!")
+  node_index <- 0:ncol(data_matrix)
   data_level <- data$levels
   data_names <- names(data$data)
 
@@ -209,7 +227,10 @@ CD_call <- function(indata,
     }
   }
 
-  # eor <- eor[sample(1:eor_nr), ]
+  if (permute) {
+    eor <- eor[sample(1:eor_nr), ] # run with random order of blocks
+  }
+
   eor_nr <- as.integer(eor_nr)
   eor <- matrix(as.integer(eor), ncol = 2)
 
@@ -217,6 +238,8 @@ CD_call <- function(indata,
   if(is.null(weights)) {
     weights <- matrix(1, node, node)
   }
+  if(ncol(weights)!=nrow(weights)) stop("weights should be a square matrix!")
+  if(ncol(weights)!=node) stop("wrong dimension for weights, number of colmn of weight matrix should be node")
   weights <- matrix(as.numeric(weights), ncol = node)
 
   # type conversion for tunning parameters
@@ -227,6 +250,7 @@ CD_call <- function(indata,
   qtol = as.numeric(qtol)
   gamma = as.numeric(gamma)
   upperbound = as.numeric(upperbound)
+  threshold = as.integer(threshold)
 
   # check/generate lambda sequence
   if(is.null(lambda_seq)) {
@@ -258,7 +282,8 @@ CD_call <- function(indata,
                       qtol,
                       weights,
                       gamma,
-                      upperbound)
+                      upperbound,
+                      threshold)
 
   # extract lambdas
   # lambda <- estimate$lambdas
@@ -309,7 +334,8 @@ CD_path <- function(node,
                     qtol,
                     weights,
                     gamma,
-                    upperbound) {
+                    upperbound,
+                    threshold) {
   # check node parameter
   if(!is.integer(node)) stop("node must be a integer!")
   if(node <= 0) stop("node must be a positive integer!")
@@ -321,6 +347,9 @@ CD_path <- function(node,
   # check data_matrix
   if(node!=ncol(data_matrix) || dataSize!=nrow(data_matrix)) stop("dimension does not match. node should be the number of columns of data matrix, and dataSize should be numbe of rows of data matrix.")
   if(sum(sapply(data_matrix, function(x){!is.integer(x)}))!=0) stop ("data_matrix has to be a data.frame with integer entries!")
+  count_levels <- sparsebnUtils::auto_count_levels(data_matrix)
+  if(sum(count_levels<2)) stop("There must be at least two levels for each node!")
+
 
   # check n_levels
   if (!is.integer(n_levels)) stop("n_levels must be a vector of integers!")
@@ -372,6 +401,10 @@ CD_path <- function(node,
   if (!is.numeric(upperbound)) stop("upperbound must be a numeric number!")
   if (upperbound <= 0 && upperbound!=-1) stop("upperbound must be a large positive integer to truncate the adaptive weights. Or it can be -1, which indicates that there is no truncation!")
 
+  # check threshold
+  if (!is.integer(threshold)) stop("threshold (alpha) must be an integer number!")
+  if (threshold <= 0) stop("threshold (alpha must be a positive integer!")
+
   CD.out <- CD(node,
                dataSize,
                data_matrix,
@@ -386,7 +419,8 @@ CD_path <- function(node,
                qtol,
                weights,
                gamma,
-               upperbound)
+               upperbound,
+               threshold)
 
   return(CD.out)
 }

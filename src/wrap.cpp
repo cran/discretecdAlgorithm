@@ -5,6 +5,13 @@
 #include <iostream>
 using namespace Rcpp;
 
+// temporary solution to "Found no calls to: R_registerRoutines, R_useDynamicSymbols"
+// https://github.com/RcppCore/Rcpp/issues/636#issuecomment-280985661
+void R_init_ccdrAlgorithm(DllInfo* info) {
+  R_registerRoutines(info, NULL, NULL, NULL, NULL);
+  R_useDynamicSymbols(info, TRUE);
+}
+
 
 // This is a simple example of exporting a C++ function to R. You can
 // source this function into an R session using the Rcpp::sourceCpp
@@ -28,7 +35,7 @@ typedef Map<VectorXi> MapVeci;
 
 
 // [[Rcpp::export]]
-List CD( int node,
+List CD(            int node,
                     int dataSize,
                     Eigen::Map<Eigen::MatrixXi> data,
                     Eigen::Map<Eigen::VectorXi> nlevels,
@@ -42,7 +49,8 @@ List CD( int node,
                     double qtol,
                     Eigen::Map<Eigen::MatrixXd> weights,
                     double gamma,
-                    double upperbound
+                    double upperbound,
+                    int threshold
 ) {
 
   // convert Rcpp type to C++ type
@@ -115,7 +123,7 @@ List CD( int node,
 
   CDAlgo(node, dataSize, t_data, t_nlevels, obsIndex, levelIndex, eor_nr, t_eor,
          nlam, eps, convLb, qtol, lambdaSeq, log_like, dur, betaM, betaN,
-         estimateG, t_weights, gamma, upperbound);
+         estimateG, t_weights, gamma, upperbound, threshold);
 
   NumericMatrix adaptWeights(node, node);
   for (int i=0; i<node; i++) {
@@ -201,4 +209,98 @@ double lambdaMax( int node,
   // should return lambdaSeq, time.
   // return estimateG;
   return lambda;
+}
+
+// [[Rcpp::export]]
+IntegerMatrix DatGen(int maxdeg,
+                     int node,
+                     Eigen::Map<Eigen::MatrixXi> ordex,
+                     IntegerVector ts,
+                     int dataSize,
+                     List ivn,
+                     IntegerVector coef_length,
+                     Eigen::Map<Eigen::VectorXi> nlevels,
+                     List coef)
+{
+  Eigen::MatrixXi t_ordex(maxdeg, node);
+  for (int i=0; i<maxdeg; i++) {
+    for (int j=0; j<node; j++) {
+      t_ordex(i, j) = ordex(i, j);
+    }
+  }
+
+  std::vector<int> t_ts(node);
+  for (int i=0; i<node; i++) {
+    t_ts[i] = ts[i];
+  }
+
+  VectorXVXi temp_ivn(dataSize);
+  for (int i=0; i<dataSize; i++) {
+    temp_ivn(i) = ivn[i];
+  }
+  std::vector< std::vector<int> > t_ivn(dataSize);
+  for (int i=0; i<dataSize; i++) {
+    for (int j=0; j<temp_ivn(i).size(); j++) {
+      t_ivn[i].push_back(temp_ivn(i)(j));
+    }
+  }
+
+  Eigen::VectorXi t_nlevels(node);
+  for (int i=0; i<node; i++) {
+    t_nlevels(i) = nlevels(i);
+  }
+
+  Eigen::MatrixXi data = Eigen::MatrixXi::Zero(dataSize, node);
+
+  std::vector<VectorXMXd> t_coef(node);
+  for (int i=0; i<node; i++) {
+    List single_nodeList = coef[i];
+    if (coef_length[i]) {
+      t_coef[i].resize(coef_length[i]);
+      for (int l_index=0; l_index < coef_length[i]; l_index++) {
+        t_coef[i](l_index) = single_nodeList[l_index];
+      }
+    }
+  }
+
+  // test for input
+
+  // Rcout << "ordex is: \n";
+  // Rcout << t_ordex << std::endl;
+  // Rcout << std::endl;
+  //
+  // Rcout << "ts is: \n";
+  // Rcout << t_ts[0] << " " << t_ts[1] << " " << t_ts[2] << " " << t_ts[3] <<" " << t_ts[4] << std::endl;
+  // Rcout << std::endl;
+  //
+  // Rcout << "ivn is: \n";
+  // for (int i=0; i<ivn.size(); i++) {
+  //   for (int j=0; j<1; j++) {
+  //     Rcout << t_ivn[i][j] << " ";
+  //   }
+  //   Rcout << std::endl;
+  // }
+  // Rcout << std::endl;
+  //
+  // Rcout << "nlevel is: \n";
+  // Rcout << t_nlevels << std::endl;
+  // Rcout << std::endl;
+  //
+  // Rcout << "data is: \n";
+  // Rcout << data << std::endl;
+  // Rcout << std::endl;
+  //
+  // Rcout << "coef is : \n";
+  // for (int i=0; i<node; i++) {
+  //   for (int j=0; j<(coef_length[i]); j++) {
+  //     Rcpp::Rcout << t_coef[i](j) << std::endl;
+  //   }
+  //   Rprintf("\n");
+  // }
+
+
+  // run data generating function
+  DatGen(t_ordex, t_ts, t_ivn, t_nlevels, data, t_coef);
+
+  return wrap(data);
 }

@@ -16,17 +16,17 @@ ivn_list <- as.list(ivn_list)
 ivn_list <- lapply(ivn_list, function(x){paste0("V", x)})
 n_obs <- length(ivn_list)
 
-# test
-test_that("generate_discrete_data runs as expected", {
-  expect_error(generate_discrete_data(graph = edge_list, params = data_params, n = n_obs, n_levels = nlevels), NA)
-
-  expect_error(generate_discrete_data(graph = edge_list, params = data_params, n = n_obs, n_levels = nlevels, ivn = ivn_list), NA)
-
-})
-
-test_that("Check output", {
-  generated_data <- generate_discrete_data(graph = edge_list, params = data_params, n = n_obs, n_levels = nlevels, ivn = ivn_list)
-  expect_equal(class(generated_data), "matrix")
-  expect_equal(nrow(generated_data), n_obs)
-  expect_equal(ncol(generated_data), length(edge_list))
-})
+# # test
+# test_that("generate_discrete_data runs as expected", {
+#   expect_error(generate_discrete_data(graph = edge_list, params = data_params, n = n_obs, n_levels = nlevels), NA)
+#
+#   expect_error(generate_discrete_data(graph = edge_list, params = data_params, n = n_obs, n_levels = nlevels, ivn = ivn_list), NA)
+#
+# })
+#
+# test_that("Check output", {
+#   generated_data <- generate_discrete_data(graph = edge_list, params = data_params, n = n_obs, n_levels = nlevels, ivn = ivn_list)
+#   expect_equal(class(generated_data), "matrix")
+#   expect_equal(nrow(generated_data), n_obs)
+#   expect_equal(ncol(generated_data), length(edge_list))
+# })

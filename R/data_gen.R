@@ -46,9 +46,8 @@ datGen_call <- function(edge_list,
   node <- length(edge_list)
   node<- as.integer(node)
 
-  ts = NULL
-  # ts <- as.integer(names(igraph::topo_sort(dag_igraph))) # for master brand
-  ts <- as.integer(igraph::topo_sort(dag_igraph)) # for dev brand
+  ts <- match(node_name, names(igraph::topo_sort(dag_igraph))) # for master brand
+  # ts <- as.integer(as.vector(igraph::topo_sort(dag_igraph))) # for dev brand
 
   if (is.null(ts)) stop("Need topological sort for the graph!")
   if (length(ts) != node) stop("length of ts should be the same with node!")
@@ -160,7 +159,7 @@ DatGen_cpp <- function(maxdeg,
   if(!is.vector(ts)) stop("ts must be a vector!")
   if(length(ts)!=node) stop("ts must have length node!")
   if(sum(!is.integer(ts))) stop("ts must be a vector of integer elements!")
-  if(sum(sort(ts)!=(1:node))) stop("ts is not a valid topological sort for node!")
+  # if(sum(sort(ts, decreasing = FALSE)!=(1:node))) stop("ts is not a valid topological sort for node!")
 
   # check for dataSize
   if(!is.integer(dataSize)) stop("dataSize must be an integer!")

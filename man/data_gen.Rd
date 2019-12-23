@@ -4,13 +4,20 @@
 \alias{data_gen}
 \title{data_gen}
 \usage{
-data_gen(graph, n, ivn = NULL, n_levels = NULL, params = NULL,
-  FUN = NULL, flip = TRUE)
+data_gen(
+  graph,
+  n,
+  ivn = NULL,
+  n_levels = NULL,
+  params = NULL,
+  FUN = NULL,
+  flip = TRUE
+)
 }
 \arguments{
 \item{graph}{a \code{\link[sparsebnUtils]{edgeList}} object.}
 
-\item{n}{size of the data set, a scaler}
+\item{n}{size of the data set, a scalar}
 
 \item{ivn, }{a list of intervention for each data point.}
 

@@ -4,10 +4,21 @@
 \alias{cd.run}
 \title{cd.run}
 \usage{
-cd.run(indata, weights = NULL, lambdas = NULL, lambdas.length = 30,
-  whitelist = NULL, blacklist = NULL, error.tol = 1e-04, convLb = 0.01,
-  weight.scale = 1, upperbound = 100, alpha = 3, permute = FALSE,
-  adaptive = FALSE)
+cd.run(
+  indata,
+  weights = NULL,
+  lambdas = NULL,
+  lambdas.length = 30,
+  whitelist = NULL,
+  blacklist = NULL,
+  error.tol = 1e-04,
+  convLb = 0.01,
+  weight.scale = 1,
+  upperbound = 100,
+  alpha = 3,
+  permute = FALSE,
+  adaptive = FALSE
+)
 }
 \arguments{
 \item{indata}{A sparsebnData object.}
@@ -39,7 +50,7 @@ from each estimate (a "black list"). See argument
 
 \item{convLb}{Small positive number used in Hessian approximation.}
 
-\item{weight.scale}{A postitive number to scale weight matrix.}
+\item{weight.scale}{A positive number to scale weight matrix.}
 
 \item{upperbound}{A large positive value used to truncate the adaptive weights.
 A -1 value indicates that there is no truncation.}
@@ -54,7 +65,7 @@ If TRUE, an adaptive lasso algorithm will be run.}
 }
 \value{
 A \code{\link[sparsebnUtils]{sparsebnPath}} object.
-        The CD Algorithm will be stoped if the number of edges exceeds 3 times of number of variables.
+        The CD Algorithm will be stopped if the number of edges exceeds 3 times of number of variables.
 }
 \description{
 Structure learning of discrete Bayesian network

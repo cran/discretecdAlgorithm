@@ -1,4 +1,4 @@
-6e6b4b39028106569b03d15c30c278b1 *DESCRIPTION
+ac6fce09791630c959510c65bdcc7f3e *DESCRIPTION
 68fa9602c25f7e8fe6a8ca6576d76d36 *NAMESPACE
 b103fa88f8f932c130fd0de76cac3ae8 *R/CD-main.R
 5b14c989ce5d3e442db95a85884701f8 *R/RcppExports.R
@@ -27,7 +27,7 @@ d18b714bbd6521a178cda83ea1ae6620 *tests/testthat/test-CD_path.R
 cc6ee0d473ac676ed2d6f1362330e43b *tests/testthat/test-cd_adaptive_run.R
 f9414e0f735e1a075e2f43e00b0d883a *tests/testthat/test-coef_gen.R
 ae9030f2e73019d2ef4b982e0225d0f5 *tests/testthat/test-datGen_call.R
-3d2b1150157cca7504f3dbbb44457432 *tests/testthat/test-dat_transform.R
+65bce912de7527d35653c3e3732cab73 *tests/testthat/test-dat_transform.R
 3f470b7690630109e6204ae145dd427b *tests/testthat/test-data_gen.R
 aa52376c8b091e11c8ef5297db06c8b7 *tests/testthat/test-generate_discrete_data.R
 40c1c56ae2074b3f1b2611493cdc051e *tests/testthat/test-get_edgeList.R

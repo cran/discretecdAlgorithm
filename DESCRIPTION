@@ -2,7 +2,7 @@ Package: discretecdAlgorithm
 Type: Package
 Title: Coordinate-Descent Algorithm for Learning Sparse Discrete
         Bayesian Networks
-Version: 0.0.6
+Version: 0.0.7
 Authors@R: person("Jiaying", "Gu", email = "gujy.lola@gmail.com", role = c("aut", "cre"))
 Description: Structure learning of Bayesian network using coordinate-descent
     algorithm. This algorithm is designed for discrete network assuming a multinomial data set,
@@ -17,8 +17,8 @@ LinkingTo: Rcpp, RcppEigen
 RoxygenNote: 7.0.2
 SystemRequirements: C++11
 NeedsCompilation: yes
-Packaged: 2019-12-21 21:31:09 UTC; jiayinggu
+Packaged: 2020-03-12 05:56:10 UTC; jiayinggu
 Author: Jiaying Gu [aut, cre]
 Maintainer: Jiaying Gu <gujy.lola@gmail.com>
 Repository: CRAN
-Date/Publication: 2019-12-23 16:45:23 UTC
+Date/Publication: 2020-03-12 06:40:02 UTC
